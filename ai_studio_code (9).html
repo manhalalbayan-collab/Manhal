@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مكتبة منهل البيان - 2026</title>
+    
+    <!-- خصائص التطبيق PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3308/3308399.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #090d16;
+            background-image: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: white;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass { background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .active-scale:active { transform: scale(0.95); transition: 0.1s; }
+        
+        /* طبقات التنبيهات - جعلناها مرئية برمجياً */
+        .overlay-full {
+            position: fixed; inset: 0; background: #090d16;
+            z-index: 9999; display: none; align-items: center; justify-content: center;
+            padding: 20px; text-align: center;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-28">
+
+    <!-- 1. واجهة التثبيت الإجبارية -->
+    <div id="pwa-overlay" class="overlay-full" style="display: flex;">
+        <div class="glass p-8 rounded-[2.5rem] max-w-sm w-full space-y-6">
+            <div class="w-20 h-20 bg-gradient-to-tr from-purple-600 to-orange-500 rounded-3xl mx-auto flex items-center justify-center text-4xl shadow-2xl font-black italic">M</div>
+            <h2 class="text-2xl font-black">ثبّت تطبيق المنهل</h2>
+            <p class="text-slate-400 text-sm">أهلاً بك! يرجى إضافة التطبيق للشاشة الرئيسية لتتمكن من طلب خدمات الطباعة والبحوث بسهولة.</p>
+            <div id="device-guide" class="text-xs py-3 px-4 bg-white/5 rounded-2xl text-purple-400 font-bold border border-purple-500/20">
+                جاري فحص الجهاز...
+            </div>
+            <button onclick="closeInstallOverlay()" class="w-full bg-purple-600 p-4 rounded-2xl font-black active-scale shadow-lg">حسناً، سأقوم بالتثبيت ✅</button>
+        </div>
+    </div>
+
+    <!-- 2. واجهة المتجر مغلق -->
+    <div id="closed-overlay" class="overlay-full">
+        <div class="glass p-8 rounded-[2.5rem] max-w-sm w-full space-y-6">
+            <div class="text-6xl animate-bounce">🌙</div>
+            <h2 class="text-2xl font-black text-white">المتجر مغلق الآن</h2>
+            <p class="text-slate-400 text-sm leading-relaxed text-right">
+                عذراً، نحن الآن خارج أوقات العمل الرسمي. <br><br>
+                ساعات العمل (السبت - الخميس):<br>
+                <span class="text-purple-500 font-bold text-lg">من 4:00 عصراً حتى 11:00 مساءً.</span>
+            </p>
+            <div class="flex flex-col gap-3">
+                <button onclick="enableScheduleMode()" class="bg-purple-600 p-4 rounded-2xl font-black active-scale shadow-lg">جدولة الطلب (أطلبه الآن وننفذه لاحقاً) 📅</button>
+                <button onclick="window.location.reload()" class="bg-white/5 p-4 rounded-2xl font-bold text-slate-400 active-scale">إلغاء الطلب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي (الهيدر) -->
+    <header class="glass sticky top-0 z-50 p-4 border-b border-white/10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-orange-500 flex items-center justify-center font-black text-white shadow-lg">M</div>
+                <h1 class="font-black text-lg">مكتبة منهل البيان</h1>
+            </div>
+            <button onclick="toggleSettingsModal()" class="bg-white/10 p-2 rounded-xl text-xs active-scale">⚙️ الإعدادات</button>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4 py-8 w-full flex-grow relative z-10">
+        
+        <!-- الشاشة الرئيسية -->
+        <div id="screen-home" class="space-y-6">
+            <div class="text-center py-4">
+                <div id="status-badge" class="inline-block px-4 py-1 rounded-full text-[10px] font-bold mb-3"></div>
+                <h2 class="text-3xl font-black">أهلاً بك، كيف نخدمك؟</h2>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 text-right">
+                <button onclick="showScreen('printing')" class="w-full glass p-6 rounded-2xl flex items-center justify-between hover:border-purple-500 active-scale shadow-xl transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-500/20 text-3xl flex items-center justify-center">🖨️</div>
+                        <div>
+                            <h3 class="font-black text-lg text-white">الطباعة والتصوير</h3>
+                            <p class="text-xs text-slate-400">3 أوراق بريال + رفع ملفات</p>
+                        </div>
+                    </div>
+                    <span>←</span>
+                </button>
+
+                <button onclick="showScreen('eservices')" class="w-full glass p-6 rounded-2xl flex items-center justify-between hover:border-orange-500 active-scale shadow-xl transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-500/20 text-3xl flex items-center justify-center">🌐</div>
+                        <div>
+                            <h3 class="font-black text-lg text-white">الخدمات الإلكترونية</h3>
+                            <p class="text-xs text-slate-400">منصات حكومية، مدرستي، أبشر</p>
+                        </div>
+                    </div>
+                    <span>←</span>
+                </button>
+
+                <button onclick="showScreen('research')" class="w-full glass p-6 rounded-2xl flex items-center justify-between hover:border-pink-500 active-scale shadow-xl transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-pink-500/20 text-3xl flex items-center justify-center">📚</div>
+                        <div>
+                            <h3 class="font-black text-lg text-white">البحوث والبوربوينت</h3>
+                            <p class="text-xs text-slate-400">إعداد بحوث مدرسية وعروض تقديمية</p>
+                        </div>
+                    </div>
+                    <span>←</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="showScreen('faq')" class="glass p-5 rounded-2xl flex items-center gap-3 active-scale border-blue-500/20">
+                        <div class="text-2xl">❓</div>
+                        <div class="text-right"><h3 class="font-black text-sm">الأسئلة</h3><p class="text-[9px] text-slate-400">أجوبة سريعة</p></div>
+                    </button>
+                    <button onclick="contactSupport()" class="glass p-5 rounded-2xl flex items-center gap-3 active-scale border-emerald-500/20">
+                        <div class="text-2xl">💬</div>
+                        <div class="text-right"><h3 class="font-black text-sm">الدعم</h3><p class="text-[9px] text-slate-400">واتساب مباشر</p></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة الطباعة -->
+        <div id="screen-printing" class="hidden space-y-6">
+            <button onclick="showScreen('home')" class="text-slate-400 text-sm font-bold active-scale">→ الرجوع</button>
+            <div class="glass p-6 rounded-3xl space-y-5 text-right">
+                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-white/20 p-6 rounded-2xl text-center bg-black/40 cursor-pointer">
+                    <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(this)">
+                    <div class="text-3xl mb-2">📄</div>
+                    <p id="fileNameDisplay" class="text-slate-200 text-sm font-bold">اضغط لاختيار ملف</p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="pageCount" value="1" min="1" oninput="calculatePrinting()" class="w-full bg-black border border-white/10 p-3 rounded-xl text-center font-bold text-white">
+                    <input type="number" id="copiesCount" value="1" min="1" oninput="calculatePrinting()" class="w-full bg-black border border-white/10 p-3 rounded-xl text-center font-bold text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-bw" onclick="setPrintType('bw')" class="p-4 rounded-xl border-2 border-purple-600 bg-purple-600/20 text-xs font-black">أسود وأبيض</button>
+                    <button id="btn-color" onclick="setPrintType('color')" class="p-4 rounded-xl border-2 border-transparent bg-white/5 text-xs font-black">ملون كامل</button>
+                </div>
+                <div class="bg-purple-600 p-5 rounded-2xl flex justify-between items-center shadow-lg">
+                    <p class="text-xl font-black text-white"><span id="live-print-total">0.33</span> ريال</p>
+                    <button onclick="addToCart('printing')" class="bg-white text-purple-600 px-6 py-2 rounded-xl font-bold active-scale">إضافة 🛒</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة السلة -->
+        <div id="screen-cart" class="hidden space-y-6">
+            <h2 class="text-2xl font-black text-right">🛒 السلة</h2>
+            <div id="cart-list" class="space-y-4"></div>
+            <div class="glass p-5 rounded-2xl space-y-4 text-right">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="setDelivery('pickup')" id="del-pickup" class="p-3 rounded-xl border-2 border-purple-600 bg-purple-600/20 text-xs font-black">استلام</button>
+                    <button onclick="setDelivery('home')" id="del-home" class="p-3 rounded-xl border-2 border-transparent bg-white/5 text-xs font-black">توصيل (+8)</button>
+                </div>
+                <input type="text" id="custName" placeholder="الاسم" class="w-full bg-black border border-white/10 p-4 rounded-xl text-sm text-right text-white">
+                <input type="tel" id="custPhone" placeholder="الجوال" class="w-full bg-black border border-white/10 p-4 rounded-xl text-sm text-left text-white">
+            </div>
+            <div class="glass p-4 rounded-2xl text-right border-orange-500/20 text-xs space-y-1">
+                <p class="font-bold text-orange-500">💰 بيانات الدفع البنكي:</p>
+                <p>البنك: <span id="view-bank" class="text-white font-bold">-</span></p>
+                <p>الحساب: <span id="view-account" class="text-white font-bold">-</span></p>
+                <p class="text-[9px] text-slate-500 font-mono" id="view-iban">SA00...</p>
+            </div>
+            <div class="bg-white text-black p-6 rounded-3xl text-center shadow-xl">
+                <p class="text-xs font-bold opacity-50 uppercase tracking-tighter">المجموع النهائي</p>
+                <h3 class="text-4xl font-black mt-1"><span id="final-total">0.00</span> ريال</h3>
+                <p id="schedule-note-cart" class="text-[10px] text-purple-600 mt-2 font-bold hidden italic">⚠️ سيتم تنفيذ هذا الطلب عند بدء العمل القادم.</p>
+            </div>
+            <button onclick="confirmAndSend()" class="w-full bg-emerald-600 p-5 rounded-2xl text-xl font-black shadow-lg active-scale">إرسال عبر الواتساب 🚀</button>
+        </div>
+
+        <!-- شاشات إضافية -->
+        <div id="screen-eservices" class="hidden space-y-4">
+            <button onclick="showScreen('home')" class="text-slate-400 text-sm font-bold active-scale">→ الرجوع</button>
+            <div class="glass p-6 rounded-3xl space-y-4 text-right">
+                <select id="eserviceType" class="w-full bg-black border border-white/10 p-4 rounded-xl text-white outline-none">
+                    <option value="منصة حكومية">منصة حكومية</option>
+                    <option value="منصة تعليمية">منصة تعليمية</option>
+                    <option value="سيرة ذاتية">سيرة ذاتية</option>
+                </select>
+                <textarea id="eserviceNotes" placeholder="ملاحظات.." class="w-full bg-black border border-white/10 p-4 rounded-xl text-white text-right outline-none"></textarea>
+                <button onclick="addToCart('eservice')" class="w-full bg-orange-500 p-4 rounded-xl font-black active-scale">حفظ 🛒</button>
+            </div>
+        </div>
+
+        <div id="screen-research" class="hidden space-y-4">
+            <button onclick="showScreen('home')" class="text-slate-400 text-sm font-bold active-scale">→ الرجوع</button>
+            <div class="glass p-6 rounded-3xl space-y-4 text-r
